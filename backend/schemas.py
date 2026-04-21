@@ -1,0 +1,101 @@
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import date
+from decimal import Decimal
+
+# Team Schemas
+class TeamBase(BaseModel):
+    team_name: str
+    coach_name: Optional[str] = None
+
+class TeamCreate(TeamBase):
+    pass
+
+class Team(TeamBase):
+    team_id: int
+    class Config:
+        from_attributes = True
+
+# Player Schemas
+class PlayerBase(BaseModel):
+    player_name: str
+    dob: Optional[date] = None
+    batting_style: Optional[str] = None
+    bowling_style: Optional[str] = None
+    team_id: int
+
+class PlayerCreate(PlayerBase):
+    pass
+
+class Player(PlayerBase):
+    player_id: int
+    class Config:
+        from_attributes = True
+
+# Match Schemas
+class MatchBase(BaseModel):
+    match_date: date
+    venue: str
+    team1_id: int
+    team2_id: int
+    winner_team_id: Optional[int] = None
+
+class MatchCreate(MatchBase):
+    pass
+
+class Match(MatchBase):
+    match_id: int
+    class Config:
+        from_attributes = True
+
+# Scorecard Schemas
+class BattingStatsCreate(BaseModel):
+    player_id: int
+    runs_scored: int = 0
+    balls_faced: int = 0
+    fours: int = 0
+    sixes: int = 0
+    dismissal_type: str = 'Did Not Bat'
+    bowler_id: Optional[int] = None
+
+class BowlingStatsCreate(BaseModel):
+    player_id: int
+    overs_bowled: Decimal = Decimal('0.0')
+    runs_conceded: int = 0
+    wickets_taken: int = 0
+    maidens: int = 0
+
+class InningsCreate(BaseModel):
+    match_id: int
+    innings_number: int
+    batting_team_id: int
+    bowling_team_id: int
+    total_runs: int = 0
+    total_wickets: int = 0
+    extras: int = 0
+    batting_stats: List[BattingStatsCreate] = []
+    bowling_stats: List[BowlingStatsCreate] = []
+
+class Innings(BaseModel):
+    innings_id: int
+    match_id: int
+    innings_number: int
+    class Config:
+        from_attributes = True
+
+# Career Stats Schema
+class PlayerCareerStats(BaseModel):
+    player_id: int
+    player_name: str
+    team_name: Optional[str] = None
+    total_runs: int
+    balls_faced: int
+    highest_score: int
+    batting_average: Optional[Decimal] = None
+    batting_strike_rate: Optional[Decimal] = None
+    total_wickets: int
+    runs_conceded: int
+    bowling_average: Optional[Decimal] = None
+
+    class Config:
+        from_attributes = True
