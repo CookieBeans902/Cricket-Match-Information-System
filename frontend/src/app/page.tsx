@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { Users, Shield, Trophy, FileText, Activity, CalendarRange } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("teams");
+  const [user, setUser] = useState<{username: string, email: string} | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
+  }, []);
 
   const tabs = [
     { id: "teams", name: "Teams", icon: Users },
@@ -16,13 +27,22 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-black text-neutral-100 font-sans selection:bg-green-500/30 overflow-hidden">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col">
+      <motion.aside 
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        className="fixed inset-y-0 left-0 w-64 bg-neutral-950/80 backdrop-blur-xl border-r border-green-500/20 p-6 flex flex-col z-50 shadow-[4px_0_24px_rgba(34,197,94,0.1)]"
+      >
         <div className="flex items-center gap-3 mb-10">
-          <div className="bg-emerald-500 p-2 rounded-lg text-neutral-950">
+          <motion.div 
+            whileHover={{ rotate: 180, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 10 }}
+            className="bg-green-500 p-2 rounded-lg text-black shadow-[0_0_15px_rgba(34,197,94,0.5)]"
+          >
             <Trophy size={24} strokeWidth={2.5} />
-          </div>
+          </motion.div>
           <h1 className="text-xl font-bold tracking-tight">CricManager</h1>
         </div>
 
@@ -31,53 +51,118 @@ export default function Dashboard() {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
-              <button
+              <motion.button
                 key={tab.id}
+                whileHover={{ scale: 1.05, x: 5 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                    ? "bg-emerald-500/10 text-emerald-400 font-medium"
-                    : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden ${isActive
+                    ? "bg-green-500/20 text-green-400 font-medium border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+                    : "text-neutral-400 hover:bg-green-500/10 hover:text-green-300"
                   }`}
               >
-                <Icon size={20} className={isActive ? "text-emerald-400" : "opacity-70"} />
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTabIndicator"
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-green-500"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <Icon size={20} className={isActive ? "text-green-400" : "opacity-70 group-hover:text-green-300"} />
                 {tab.name}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-neutral-800">
+        <div className="mt-auto pt-6 border-t border-green-500/20">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg" />
-            <div>
-              <p className="text-sm font-medium text-neutral-200">Admin User</p>
-              <p className="text-xs text-neutral-500">admin@cricmanager.com</p>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 shadow-[0_0_10px_rgba(52,211,153,0.5)] flex items-center justify-center text-black font-bold overflow-hidden select-none">
+              {user ? user.username.charAt(0).toUpperCase() : ""}
             </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-neutral-200 truncate" title={user?.username || "Admin User"}>{user ? user.username : "Admin User"}</p>
+              <p className="text-xs text-neutral-500 truncate" title={user?.email || "admin@cricmanager.com"}>{user ? user.email : "admin@cricmanager.com"}</p>
+            </div>
+            {user && (
+              <motion.button 
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => { localStorage.removeItem('user'); setUser(null); }}
+                className="ml-auto p-1.5 hover:bg-red-500/10 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
+                title="Logout"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </motion.button>
+            )}
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
       <main className="ml-64 p-10 max-w-6xl">
         <header className="mb-10">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-100 to-neutral-400">
+          <motion.h2 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={activeTab}
+            className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-emerald-300 to-green-600 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+          >
             {tabs.find((t) => t.id === activeTab)?.name}
-          </h2>
-          <p className="text-neutral-400 mt-2">Manage your cricket data efficiently.</p>
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-green-500/60 mt-2 font-medium"
+          >
+            Manage your cricket data efficiently.
+          </motion.p>
         </header>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full" />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="bg-neutral-900/50 backdrop-blur-md border border-green-500/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(34,197,94,0.05)] relative overflow-hidden"
+        >
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 blur-[100px] rounded-full pointer-events-none" 
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.5, 1],
+              opacity: [0.1, 0.3, 0.1],
+            }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" 
+          />
 
-          <div className="relative z-10">
-            {activeTab === "teams" && <TeamForm />}
-            {activeTab === "players" && <PlayerForm />}
-            {activeTab === "series" && <SeriesForm />}
-            {activeTab === "matches" && <MatchForm />}
-            {activeTab === "scorecard" && <ScorecardForm />}
-            {activeTab === "stats" && <StatsView />}
+          <div className="relative z-10 w-full min-h-[400px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {activeTab === "teams" && <TeamForm />}
+                {activeTab === "players" && <PlayerForm />}
+                {activeTab === "series" && <SeriesForm />}
+                {activeTab === "matches" && <MatchForm />}
+                {activeTab === "scorecard" && <ScorecardForm />}
+                {activeTab === "stats" && <StatsView />}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </main>
     </div>
   );
@@ -137,7 +222,7 @@ function TeamForm() {
           type="text"
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           placeholder="e.g. Mumbai Indians"
         />
       </div>
@@ -147,17 +232,19 @@ function TeamForm() {
           type="text"
           value={coachName}
           onChange={(e) => setCoachName(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           placeholder="e.g. Mahela Jayawardene"
         />
       </div>
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(34,197,94,0.4)" }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleCreateTeam}
         disabled={loading}
-        className="bg-emerald-500 text-neutral-950 font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-green-500 text-black font-bold px-6 py-3 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]"
       >
         {loading ? "Creating..." : "Create Team"}
-      </button>
+      </motion.button>
     </div>
   );
 }
@@ -341,7 +428,7 @@ function PlayerForm() {
           type="text"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           placeholder="e.g. Virat Kohli"
         />
       </div>
@@ -351,7 +438,7 @@ function PlayerForm() {
           type="date"
           value={dob}
           onChange={(e) => setDob(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -360,7 +447,7 @@ function PlayerForm() {
           <select
             value={battingStyle}
             onChange={(e) => setBattingStyle(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           >
             <option>Right-hand bat</option>
             <option>Left-hand bat</option>
@@ -371,7 +458,7 @@ function PlayerForm() {
           <select
             value={bowlingStyle}
             onChange={(e) => setBowlingStyle(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           >
             <option>Right-arm fast</option>
             <option>Right-arm spin</option>
@@ -386,7 +473,7 @@ function PlayerForm() {
         <select
           value={teamId}
           onChange={(e) => setTeamId(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
         >
           <option value="">Select a team...</option>
           {teams.map((t) => (
@@ -394,13 +481,15 @@ function PlayerForm() {
           ))}
         </select>
       </div>
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(34,197,94,0.4)" }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleAddPlayer}
         disabled={loading}
-        className="bg-emerald-500 text-neutral-950 font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-green-500 text-black font-bold px-6 py-3 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]"
       >
         {loading ? "Adding..." : "Add Player"}
-      </button>
+      </motion.button>
     </div>
   );
 }
@@ -491,11 +580,15 @@ function MatchForm() {
   };
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-lg w-full">
       {message.text && (
-        <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]'}`}
+        >
           {message.text}
-        </div>
+        </motion.div>
       )}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -504,7 +597,7 @@ function MatchForm() {
             type="date"
             value={matchDate}
             onChange={(e) => setMatchDate(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           />
         </div>
         <div>
@@ -529,7 +622,7 @@ function MatchForm() {
           type="text"
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           placeholder="e.g. Wankhede Stadium"
         />
       </div>
@@ -539,7 +632,7 @@ function MatchForm() {
           <select
             value={team1Id}
             onChange={(e) => setTeam1Id(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           >
             <option value="">Select team...</option>
             {teams.map((t) => (
@@ -552,7 +645,7 @@ function MatchForm() {
           <select
             value={team2Id}
             onChange={(e) => setTeam2Id(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
           >
             <option value="">Select team...</option>
             {teams.map((t) => (
@@ -618,13 +711,15 @@ function MatchForm() {
         </select>
       </div>
 
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(34,197,94,0.4)" }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleScheduleMatch}
         disabled={loading}
-        className="bg-emerald-500 text-neutral-950 font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-green-500 text-black font-bold px-6 py-3 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]"
       >
         {loading ? "Scheduling..." : "Schedule Match"}
-      </button>
+      </motion.button>
     </div>
   );
 }
@@ -817,11 +912,15 @@ function ScorecardForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {message.text && (
-        <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]'}`}
+        >
           {message.text}
-        </div>
+        </motion.div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -829,7 +928,7 @@ function ScorecardForm() {
           <label className="block text-sm font-medium text-neutral-400 mb-2">Select Match</label>
           <select
             value={matchId} onChange={e => setMatchId(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all">
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
             <option value="">Select match...</option>
             {matches.map(m => (
               <option key={m.match_id} value={m.match_id}>
@@ -842,7 +941,7 @@ function ScorecardForm() {
           <label className="block text-sm font-medium text-neutral-400 mb-2">Innings</label>
           <select
             value={inningsNumber} onChange={e => setInningsNumber(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all">
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
             <option value="1">1st Innings</option>
             <option value="2">2nd Innings</option>
             <option value="3">3rd Innings</option>
@@ -850,19 +949,21 @@ function ScorecardForm() {
           </select>
         </div>
         <div className="col-span-2 flex items-end">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleFetchInnings}
             disabled={loading}
-            className="w-full bg-cyan-500/10 text-cyan-400 font-medium px-6 py-3 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-green-500/10 text-green-400 font-medium px-6 py-3 rounded-lg border border-green-500/30 hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(34,197,94,0.1)]"
           >
             Fetch Match Saved Details
-          </button>
+          </motion.button>
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Batting Team</label>
           <select
             value={battingTeamId} onChange={e => setBattingTeamId(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all">
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
             <option value="">Select team...</option>
             {teams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
           </select>
@@ -871,7 +972,7 @@ function ScorecardForm() {
           <label className="block text-sm font-medium text-neutral-400 mb-2">Bowling Team</label>
           <select
             value={bowlingTeamId} onChange={e => setBowlingTeamId(e.target.value)}
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all">
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
             <option value="">Select team...</option>
             {teams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
           </select>
@@ -881,15 +982,15 @@ function ScorecardForm() {
       <div className="grid grid-cols-4 gap-6 mb-8 pb-8 border-b border-neutral-800">
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Total Runs</label>
-          <input type="number" value={totalRuns} onChange={e => setTotalRuns(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
+          <input type="number" value={totalRuns} onChange={e => setTotalRuns(e.target.value)} className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]" placeholder="0" />
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Total Wickets</label>
-          <input type="number" value={totalWickets} onChange={e => setTotalWickets(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
+          <input type="number" value={totalWickets} onChange={e => setTotalWickets(e.target.value)} className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]" placeholder="0" />
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Extras</label>
-          <input type="number" value={extras} onChange={e => setExtras(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
+          <input type="number" value={extras} onChange={e => setExtras(e.target.value)} className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]" placeholder="0" />
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Overs Played</label>
@@ -1008,13 +1109,15 @@ function ScorecardForm() {
         <button onClick={handleAddBowler} className="mt-2 text-sm text-cyan-500 hover:text-cyan-400 font-medium">+ Add another bowler</button>
       </div>
 
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02, boxShadow: "0 0 25px rgba(34,197,94,0.4)" }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleSaveScorecard}
         disabled={loading}
-        className="w-full bg-emerald-500 text-neutral-950 font-bold px-6 py-4 rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-green-500 text-black font-extrabold px-6 py-4 rounded-xl hover:bg-green-400 transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Saving..." : "Save Full Scorecard"}
-      </button>
+      </motion.button>
     </div>
   );
 }

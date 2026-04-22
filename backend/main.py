@@ -2,7 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
-
+import secrets
+from auth_module import send_otp_email
 import models, schemas, database
 
 
@@ -30,6 +31,45 @@ def create_series(series: schemas.SeriesCreate, db: Session = Depends(database.g
 @app.get("/series/", response_model=List[schemas.Series])
 def get_series(db: Session = Depends(database.get_db)):
     return db.query(models.Series).all()
+
+# Endpoints for authentication
+
+# In-memory store for OTPs
+otp_store: dict[str, str] = {}
+
+@app.post("/auth/send-otp")
+def api_send_otp(req: schemas.OTPRequest, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+    otp = str(int(secrets.token_hex(3), base=16)%1000000).rjust(6,'0')
+    otp_store[req.email] = otp
+    # Calling placeholder or real send_otp_email
+    if not send_otp_email(req.email, otp):
+        raise HTTPException(status_code=500, detail="Failed to send OTP")
+    return {"message": "OTP sent successfully"}
+
+@app.post("/auth/signup", response_model=schemas.User)
+def signup(req: schemas.UserSignup, db: Session = Depends(database.get_db)):
+    if req.email not in otp_store or otp_store[req.email] != req.otp:
+        # otp_store.pop(req.email, None)
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    
+    user_data = req.model_dump()
+    user_data.pop("otp")
+    db_user = models.User(**user_data)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    otp_store.pop(req.email, None)
+    return db_user
+
+@app.post("/auth/login")
+def login(req: schemas.UserLogin, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user or user.password != req.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {"message": "Login successful", "user": {"email": user.email, "username": user.username}}
 
 # Endpoints for Team
 
