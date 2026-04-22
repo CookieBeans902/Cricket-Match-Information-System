@@ -1,6 +1,15 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, CheckConstraint, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
+
+class User(Base):
+    __tablename__ = "users"
+    email = Column(String(100), primary_key=True)
+    username = Column(String(100), nullable=False)
+    password = Column(String(100), nullable=False)
+    age = Column(Integer)
+    iiti = Column(Boolean)
+
 
 class Team(Base):
     __tablename__ = "team"

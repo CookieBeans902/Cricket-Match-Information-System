@@ -3,6 +3,34 @@ from typing import List, Optional
 from datetime import date
 from decimal import Decimal
 
+# User Schemas
+class UserBase(BaseModel):
+    email: str
+    username: str
+    age: Optional[int] = None
+    iiti: Optional[bool] = False
+
+class UserCreate(UserBase):
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class User(UserBase):
+    class Config:
+        from_attributes = True
+
+class OTPRequest(BaseModel):
+    email: str
+
+class OTPVerify(BaseModel):
+    email: str
+    otp: str
+
+class UserSignup(UserCreate):
+    otp: str
+
 # Team Schemas
 class TeamBase(BaseModel):
     team_name: str

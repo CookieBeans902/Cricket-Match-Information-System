@@ -5,6 +5,16 @@ import { Users, Shield, Trophy, FileText, Activity } from "lucide-react";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("teams");
+  const [user, setUser] = useState<{username: string, email: string} | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
+  }, []);
 
   const tabs = [
     { id: "teams", name: "Teams", icon: Users },
@@ -47,11 +57,22 @@ export default function Dashboard() {
 
         <div className="mt-auto pt-6 border-t border-neutral-800">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg" />
-            <div>
-              <p className="text-sm font-medium text-neutral-200">Admin User</p>
-              <p className="text-xs text-neutral-500">admin@cricmanager.com</p>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg flex items-center justify-center text-neutral-900 font-bold overflow-hidden select-none">
+              {user ? user.username.charAt(0).toUpperCase() : ""}
             </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-neutral-200 truncate" title={user?.username || "Admin User"}>{user ? user.username : "Admin User"}</p>
+              <p className="text-xs text-neutral-500 truncate" title={user?.email || "admin@cricmanager.com"}>{user ? user.email : "admin@cricmanager.com"}</p>
+            </div>
+            {user && (
+              <button 
+                onClick={() => { localStorage.removeItem('user'); setUser(null); }}
+                className="ml-auto p-1.5 hover:bg-neutral-800 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
+                title="Logout"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </button>
+            )}
           </div>
         </div>
       </aside>
