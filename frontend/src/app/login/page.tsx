@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -38,13 +39,30 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
             {/* Background blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-blob"></div>
-            <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-blob animation-delay-2000"></div>
-            <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-blob animation-delay-4000"></div>
+            <motion.div 
+                animate={{ rotate: 360, scale: [1, 1.2, 1] }} 
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-green-600 rounded-full mix-blend-screen filter blur-[128px] opacity-20"
+            />
+            <motion.div 
+                animate={{ rotate: -360, scale: [1, 1.5, 1] }} 
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-emerald-600 rounded-full mix-blend-screen filter blur-[128px] opacity-20"
+            />
+            <motion.div 
+                animate={{ y: [0, -50, 0], x: [0, 50, 0] }} 
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute bottom-[-20%] left-[20%] w-[30rem] h-[30rem] bg-green-400 rounded-full mix-blend-screen filter blur-[128px] opacity-20"
+            />
             
-            <div className="relative z-10 w-full max-w-md p-8 bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <motion.div 
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+                className="relative z-10 w-full max-w-md p-8 bg-zinc-950/60 backdrop-blur-2xl border border-green-500/20 rounded-3xl shadow-[0_0_50px_rgba(34,197,94,0.15)]"
+            >
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h1>
                     <p className="text-zinc-400 text-sm">Enter your credentials to access your account</p>
@@ -58,7 +76,7 @@ export default function LoginPage() {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 bg-zinc-800/50 border border-white/5 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+                            className="w-full px-4 py-3 bg-black border border-green-500/30 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-[inset_0_0_15px_rgba(34,197,94,0.05)]"
                             placeholder="you@example.com"
                         />
                     </div>
@@ -69,7 +87,7 @@ export default function LoginPage() {
                             required 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-zinc-800/50 border border-white/5 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+                            className="w-full px-4 py-3 bg-black border border-green-500/30 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-[inset_0_0_15px_rgba(34,197,94,0.05)]"
                             placeholder="••••••••"
                         />
                     </div>
@@ -80,22 +98,24 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    <button 
+                    <motion.button 
+                        whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(34,197,94,0.4)" }}
+                        whileTap={{ scale: 0.98 }}
                         type="submit" 
                         disabled={loading}
-                        className="w-full py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white font-semibold rounded-xl transition-all duration-300 transform shadow-lg shadow-purple-500/30 flex justify-center items-center"
+                        className="w-full py-3.5 bg-green-500 hover:bg-green-400 text-black font-extrabold rounded-xl transition-all duration-300 disabled:opacity-50 flex justify-center items-center shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
-                    </button>
+                    </motion.button>
                 </form>
 
                 <div className="mt-8 text-center">
                     <p className="text-zinc-400 text-sm">
                         Don't have an account?{' '}
-                        <a href="/signup" className="text-white hover:text-indigo-400 transition-colors font-medium">Create an account</a>
+                        <a href="/signup" className="text-green-400 hover:text-green-300 transition-colors font-medium hover:underline decoration-green-400/50 underline-offset-4">Create an account</a>
                     </p>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
