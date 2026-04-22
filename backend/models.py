@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
-from .database import Base
+from database import Base
 
 class Team(Base):
     __tablename__ = "team"
@@ -21,7 +21,7 @@ class Player(Base):
     team_id = Column(Integer, ForeignKey("team.team_id", ondelete="CASCADE"), nullable=False)
 
     team = relationship("Team", back_populates="players")
-    batting_stats = relationship("BattingStats", back_populates="player")
+    batting_stats = relationship("BattingStats", back_populates="player", foreign_keys="[BattingStats.player_id]")
     bowling_stats = relationship("BowlingStats", back_populates="player")
 
 class Match(Base):

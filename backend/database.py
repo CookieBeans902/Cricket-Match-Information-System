@@ -2,13 +2,13 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Update with actual Oracle DB credentials
 # The format for oracledb is: oracle+oracledb://user:password@host:port/?service_name=service
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "oracle+oracledb://admin:password@localhost:1521/?service_name=ORCL"
-)
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Oracle uses a specific dialect and might need Thick mode depending on features, 
 # but thin mode is usually sufficient for standard operations.

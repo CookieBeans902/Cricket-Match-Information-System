@@ -18,23 +18,19 @@ SELECT
         WHEN SUM(CASE WHEN bat.Dismissal_Type NOT IN ('Not Out', 'Retired Hurt', 'Did Not Bat') THEN 1 ELSE 0 END) = 0 THEN NULL
         ELSE ROUND(SUM(bat.Runs_Scored) / NULLIF(SUM(CASE WHEN bat.Dismissal_Type NOT IN ('Not Out', 'Retired Hurt', 'Did Not Bat') THEN 1 ELSE 0 END), 0), 2)
     END AS Batting_Average,
-    
     -- Strike Rate Calculation: (Total Runs / Balls Faced) * 100
     CASE
         WHEN SUM(bat.Balls_Faced) = 0 THEN 0
         ELSE ROUND((SUM(bat.Runs_Scored) / NULLIF(SUM(bat.Balls_Faced), 0)) * 100, 2)
     END AS Batting_Strike_Rate,
-
     -- Bowling Stats Calculation
     COALESCE(SUM(bowl.Wickets_Taken), 0) AS Total_Wickets,
     COALESCE(SUM(bowl.Runs_Conceded), 0) AS Runs_Conceded,
-    
     -- Bowling Average = Runs Conceded / Wickets Taken
     CASE
         WHEN SUM(bowl.Wickets_Taken) = 0 THEN NULL
         ELSE ROUND(SUM(bowl.Runs_Conceded) / NULLIF(SUM(bowl.Wickets_Taken), 0), 2)
     END AS Bowling_Average
-
 FROM 
     PLAYER p
 LEFT JOIN 

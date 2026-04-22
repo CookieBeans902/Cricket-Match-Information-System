@@ -9,7 +9,14 @@ class TeamBase(BaseModel):
     coach_name: Optional[str] = None
 
 class TeamCreate(TeamBase):
-    pass
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "team_name": "India National Cricket Team",
+                "coach_name": "Rahul Dravid"
+            }
+        }
+    }
 
 class Team(TeamBase):
     team_id: int
@@ -82,6 +89,25 @@ class Innings(BaseModel):
     innings_number: int
     class Config:
         from_attributes = True
+
+class BattingStats(BattingStatsCreate):
+    innings_id: int
+    class Config:
+        from_attributes = True
+
+class BowlingStats(BowlingStatsCreate):
+    innings_id: int
+    class Config:
+        from_attributes = True
+
+class InningsDetail(Innings):
+    batting_team_id: int
+    bowling_team_id: int
+    total_runs: int
+    total_wickets: int
+    extras: int
+    batting_stats: List[BattingStats] = []
+    bowling_stats: List[BowlingStats] = []
 
 # Career Stats Schema
 class PlayerCareerStats(BaseModel):

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
-from . import models, schemas, database
+import models, schemas, database
 
 app = FastAPI(title="Cricket Match Information System")
 
@@ -102,6 +102,16 @@ def create_innings_scorecard(innings_data: schemas.InningsCreate, db: Session = 
 
     db.commit()
     return db_innings
+
+@app.get("/innings/{match_id}/{innings_number}", response_model=schemas.InningsDetail)
+def get_innings(match_id: int, innings_number: int, db: Session = Depends(database.get_db)):
+    innings = db.query(models.Innings).filter(
+        models.Innings.match_id == match_id,
+        models.Innings.innings_number == innings_number
+    ).first()
+    if not innings:
+        raise HTTPException(status_code=404, detail="Innings not found")
+    return innings
 
 # Endpoints for Statistics
 @app.get("/stats/players", response_model=List[schemas.PlayerCareerStats])
