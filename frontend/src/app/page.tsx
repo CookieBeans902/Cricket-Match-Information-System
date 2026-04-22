@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Shield, Trophy, FileText, Activity } from "lucide-react";
+import { Users, Shield, Trophy, FileText, Activity, CalendarRange } from "lucide-react";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("teams");
@@ -9,6 +9,7 @@ export default function Dashboard() {
   const tabs = [
     { id: "teams", name: "Teams", icon: Users },
     { id: "players", name: "Players", icon: Shield },
+    { id: "series", name: "Series", icon: CalendarRange },
     { id: "matches", name: "Matches", icon: Trophy },
     { id: "scorecard", name: "Scorecard Entry", icon: FileText },
     { id: "stats", name: "Player Stats", icon: Activity },
@@ -71,6 +72,7 @@ export default function Dashboard() {
           <div className="relative z-10">
             {activeTab === "teams" && <TeamForm />}
             {activeTab === "players" && <PlayerForm />}
+            {activeTab === "series" && <SeriesForm />}
             {activeTab === "matches" && <MatchForm />}
             {activeTab === "scorecard" && <ScorecardForm />}
             {activeTab === "stats" && <StatsView />}
@@ -155,6 +157,112 @@ function TeamForm() {
         className="bg-emerald-500 text-neutral-950 font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Creating..." : "Create Team"}
+      </button>
+    </div>
+  );
+}
+
+function SeriesForm() {
+  const [seriesName, setSeriesName] = useState("");
+  const [seriesType, setSeriesType] = useState("Bilateral");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
+
+  const handleCreateSeries = async () => {
+    if (!seriesName) {
+      setMessage({ text: "Series name is required", type: "error" });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ text: "", type: "" });
+
+    try {
+      const response = await fetch("http://localhost:8000/series/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          series_name: seriesName,
+          series_type: seriesType,
+          start_date: startDate || null,
+          end_date: endDate || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create series. It might already exist.");
+      }
+
+      setMessage({ text: "Series created successfully!", type: "success" });
+      setSeriesName("");
+      setSeriesType("Bilateral");
+      setStartDate("");
+      setEndDate("");
+    } catch (error: any) {
+      setMessage({ text: error.message || "An error occurred", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-md">
+      {message.text && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+          {message.text}
+        </div>
+      )}
+      <div>
+        <label className="block text-sm font-medium text-neutral-400 mb-2">Series Name</label>
+        <input
+          type="text"
+          value={seriesName}
+          onChange={(e) => setSeriesName(e.target.value)}
+          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          placeholder="e.g. India vs Australia 2024"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-neutral-400 mb-2">Series Type</label>
+        <select
+          value={seriesType}
+          onChange={(e) => setSeriesType(e.target.value)}
+          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+        >
+          <option>Bilateral</option>
+          <option>Tournament</option>
+          <option>Tri-Series</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Start Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">End Date</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          />
+        </div>
+      </div>
+      <button
+        onClick={handleCreateSeries}
+        disabled={loading}
+        className="bg-emerald-500 text-neutral-950 font-semibold px-6 py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? "Creating..." : "Create Series"}
       </button>
     </div>
   );
@@ -299,27 +407,35 @@ function PlayerForm() {
 
 function MatchForm() {
   const [teams, setTeams] = useState<any[]>([]);
+  const [seriesList, setSeriesList] = useState<any[]>([]);
+  const [players, setPlayers] = useState<any[]>([]);
   const [matchDate, setMatchDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [venue, setVenue] = useState("");
+  const [matchType, setMatchType] = useState("ODI");
   const [team1Id, setTeam1Id] = useState("");
   const [team2Id, setTeam2Id] = useState("");
+  const [seriesId, setSeriesId] = useState("");
+  const [tossWinnerId, setTossWinnerId] = useState("");
+  const [tossDecision, setTossDecision] = useState("Bat");
+  const [manOfMatchId, setManOfMatchId] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
 
   useEffect(() => {
-    fetch("http://localhost:8000/teams/")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setTeams(data);
-        }
-      })
-      .catch(err => console.error("Failed to fetch teams:", err));
+    Promise.all([
+      fetch("http://localhost:8000/teams/").then(res => res.json()),
+      fetch("http://localhost:8000/series/").then(res => res.json()),
+      fetch("http://localhost:8000/players/").then(res => res.json()),
+    ]).then(([teamsData, seriesData, playersData]) => {
+      if (Array.isArray(teamsData)) setTeams(teamsData);
+      if (Array.isArray(seriesData)) setSeriesList(seriesData);
+      if (Array.isArray(playersData)) setPlayers(playersData);
+    }).catch(err => console.error("Failed to fetch match form data:", err));
   }, []);
 
   const handleScheduleMatch = async () => {
     if (!matchDate || !venue || !team1Id || !team2Id) {
-      setMessage({ text: "All fields are required", type: "error" });
+      setMessage({ text: "Match date, venue, and both teams are required", type: "error" });
       return;
     }
 
@@ -338,8 +454,13 @@ function MatchForm() {
         body: JSON.stringify({
           match_date: matchDate,
           venue: venue,
+          match_type: matchType,
           team1_id: parseInt(team1Id),
           team2_id: parseInt(team2Id),
+          series_id: seriesId ? parseInt(seriesId) : null,
+          toss_winner_id: tossWinnerId ? parseInt(tossWinnerId) : null,
+          toss_decision: tossWinnerId ? tossDecision : null,
+          man_of_match_id: manOfMatchId ? parseInt(manOfMatchId) : null,
         }),
       });
 
@@ -355,8 +476,13 @@ function MatchForm() {
       setMessage({ text: "Match scheduled successfully!", type: "success" });
       setMatchDate(new Date().toISOString().split("T")[0]);
       setVenue("");
+      setMatchType("ODI");
       setTeam1Id("");
       setTeam2Id("");
+      setSeriesId("");
+      setTossWinnerId("");
+      setTossDecision("Bat");
+      setManOfMatchId("");
     } catch (error: any) {
       setMessage({ text: error.message || "An error occurred", type: "error" });
     } finally {
@@ -371,14 +497,31 @@ function MatchForm() {
           {message.text}
         </div>
       )}
-      <div>
-        <label className="block text-sm font-medium text-neutral-400 mb-2">Match Date</label>
-        <input
-          type="date"
-          value={matchDate}
-          onChange={(e) => setMatchDate(e.target.value)}
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Match Date</label>
+          <input
+            type="date"
+            value={matchDate}
+            onChange={(e) => setMatchDate(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Match Type</label>
+          <select
+            value={matchType}
+            onChange={(e) => setMatchType(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          >
+            <option>Test</option>
+            <option>ODI</option>
+            <option>T20I</option>
+            <option>T10</option>
+            <option>The Hundred</option>
+            <option>Other</option>
+          </select>
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-neutral-400 mb-2">Venue</label>
@@ -418,6 +561,63 @@ function MatchForm() {
           </select>
         </div>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-neutral-400 mb-2">Series <span className="text-neutral-600">(optional)</span></label>
+        <select
+          value={seriesId}
+          onChange={(e) => setSeriesId(e.target.value)}
+          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+        >
+          <option value="">No series</option>
+          {seriesList.map((s) => (
+            <option key={s.series_id} value={s.series_id}>{s.series_name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Toss Winner <span className="text-neutral-600">(optional)</span></label>
+          <select
+            value={tossWinnerId}
+            onChange={(e) => setTossWinnerId(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+          >
+            <option value="">Not set</option>
+            {teams.filter(t => [team1Id, team2Id].includes(String(t.team_id))).map((t) => (
+              <option key={t.team_id} value={t.team_id}>{t.team_name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Toss Decision</label>
+          <select
+            value={tossDecision}
+            onChange={(e) => setTossDecision(e.target.value)}
+            disabled={!tossWinnerId}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:opacity-40"
+          >
+            <option>Bat</option>
+            <option>Bowl</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-neutral-400 mb-2">Man of the Match <span className="text-neutral-600">(optional)</span></label>
+        <select
+          value={manOfMatchId}
+          onChange={(e) => setManOfMatchId(e.target.value)}
+          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+        >
+          <option value="">Not yet awarded</option>
+          {players.map((p) => (
+            <option key={p.player_id} value={p.player_id}>{p.player_name}</option>
+          ))}
+        </select>
+      </div>
+
       <button
         onClick={handleScheduleMatch}
         disabled={loading}
@@ -442,8 +642,10 @@ function ScorecardForm() {
   const [totalRuns, setTotalRuns] = useState("");
   const [totalWickets, setTotalWickets] = useState("");
   const [extras, setExtras] = useState("");
+  const [oversPlayed, setOversPlayed] = useState("");
 
-  const [batters, setBatters] = useState([{ playerId: "", runs: "", balls: "", dismissal: "Not Out" }]);
+  const [batters, setBatters] = useState([{ playerId: "", runs: "", balls: "", fours: "", sixes: "", dismissal: "Not Out" }]);
+  const [bowlers, setBowlers] = useState([{ playerId: "", overs: "", runs: "", wickets: "", maidens: "", noBalls: "", wides: "" }]);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
@@ -461,13 +663,31 @@ function ScorecardForm() {
   }, []);
 
   const handleAddBatter = () => {
-    setBatters([...batters, { playerId: "", runs: "", balls: "", dismissal: "Not Out" }]);
+    setBatters([...batters, { playerId: "", runs: "", balls: "", fours: "", sixes: "", dismissal: "Not Out" }]);
   };
 
   const handleBatterChange = (index: number, field: string, value: string) => {
-    const newBatters = [...batters];
-    newBatters[index] = { ...newBatters[index], [field]: value };
-    setBatters(newBatters);
+    const updated = [...batters];
+    updated[index] = { ...updated[index], [field]: value };
+    setBatters(updated);
+  };
+
+  const handleRemoveBatter = (index: number) => {
+    setBatters(batters.filter((_, i) => i !== index));
+  };
+
+  const handleAddBowler = () => {
+    setBowlers([...bowlers, { playerId: "", overs: "", runs: "", wickets: "", maidens: "", noBalls: "", wides: "" }]);
+  };
+
+  const handleBowlerChange = (index: number, field: string, value: string) => {
+    const updated = [...bowlers];
+    updated[index] = { ...updated[index], [field]: value };
+    setBowlers(updated);
+  };
+
+  const handleRemoveBowler = (index: number) => {
+    setBowlers(bowlers.filter((_, i) => i !== index));
   };
 
   const handleFetchInnings = async () => {
@@ -491,16 +711,33 @@ function ScorecardForm() {
       setTotalRuns(data.total_runs.toString());
       setTotalWickets(data.total_wickets.toString());
       setExtras(data.extras.toString());
+      setOversPlayed(data.overs_played?.toString() || "");
 
       if (data.batting_stats && data.batting_stats.length > 0) {
         setBatters(data.batting_stats.map((b: any) => ({
           playerId: b.player_id.toString(),
           runs: b.runs_scored.toString(),
           balls: b.balls_faced.toString(),
-          dismissal: b.dismissal_type
+          fours: b.fours.toString(),
+          sixes: b.sixes.toString(),
+          dismissal: b.dismissal_type,
         })));
       } else {
-        setBatters([{ playerId: "", runs: "", balls: "", dismissal: "Not Out" }]);
+        setBatters([{ playerId: "", runs: "", balls: "", fours: "", sixes: "", dismissal: "Not Out" }]);
+      }
+
+      if (data.bowling_stats && data.bowling_stats.length > 0) {
+        setBowlers(data.bowling_stats.map((b: any) => ({
+          playerId: b.player_id.toString(),
+          overs: b.overs_bowled.toString(),
+          runs: b.runs_conceded.toString(),
+          wickets: b.wickets_taken.toString(),
+          maidens: b.maidens.toString(),
+          noBalls: b.no_balls.toString(),
+          wides: b.wides.toString(),
+        })));
+      } else {
+        setBowlers([{ playerId: "", overs: "", runs: "", wickets: "", maidens: "", noBalls: "", wides: "" }]);
       }
 
       setMessage({ text: "Fetched match saved details successfully!", type: "success" });
@@ -526,10 +763,22 @@ function ScorecardForm() {
         player_id: parseInt(b.playerId),
         runs_scored: parseInt(b.runs) || 0,
         balls_faced: parseInt(b.balls) || 0,
-        fours: 0,
-        sixes: 0,
+        fours: parseInt(b.fours) || 0,
+        sixes: parseInt(b.sixes) || 0,
         dismissal_type: b.dismissal,
-        bowler_id: null
+        bowler_id: null,
+      }));
+
+    const bowlingStats = bowlers
+      .filter(b => b.playerId)
+      .map(b => ({
+        player_id: parseInt(b.playerId),
+        overs_bowled: parseFloat(b.overs) || 0,
+        runs_conceded: parseInt(b.runs) || 0,
+        wickets_taken: parseInt(b.wickets) || 0,
+        maidens: parseInt(b.maidens) || 0,
+        no_balls: parseInt(b.noBalls) || 0,
+        wides: parseInt(b.wides) || 0,
       }));
 
     try {
@@ -544,8 +793,9 @@ function ScorecardForm() {
           total_runs: parseInt(totalRuns) || 0,
           total_wickets: parseInt(totalWickets) || 0,
           extras: parseInt(extras) || 0,
+          overs_played: parseFloat(oversPlayed) || 0,
           batting_stats: battingStats,
-          bowling_stats: []
+          bowling_stats: bowlingStats,
         })
       });
 
@@ -583,7 +833,7 @@ function ScorecardForm() {
             <option value="">Select match...</option>
             {matches.map(m => (
               <option key={m.match_id} value={m.match_id}>
-                {m.match_date} - {m.venue}
+                {m.match_date} — {m.venue}
               </option>
             ))}
           </select>
@@ -628,7 +878,7 @@ function ScorecardForm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8 pb-8 border-b border-neutral-800">
+      <div className="grid grid-cols-4 gap-6 mb-8 pb-8 border-b border-neutral-800">
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Total Runs</label>
           <input type="number" value={totalRuns} onChange={e => setTotalRuns(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
@@ -641,15 +891,20 @@ function ScorecardForm() {
           <label className="block text-sm font-medium text-neutral-400 mb-2">Extras</label>
           <input type="number" value={extras} onChange={e => setExtras(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">Overs Played</label>
+          <input type="number" step="0.1" value={oversPlayed} onChange={e => setOversPlayed(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0.0" />
+        </div>
       </div>
 
+      {/* Batting Section */}
       <div className="bg-neutral-950/50 p-6 rounded-xl border border-neutral-800/50 space-y-4">
         <h3 className="text-lg font-medium text-emerald-400 flex items-center gap-2">
-          <Activity size={18} /> Add Batting Performance
+          <Activity size={18} /> Batting Performance
         </h3>
 
         {batters.map((batter, index) => (
-          <div key={index} className="grid grid-cols-6 gap-4 items-end">
+          <div key={index} className="grid grid-cols-8 gap-3 items-end">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-neutral-500 mb-1">Batter</label>
               <select
@@ -667,7 +922,15 @@ function ScorecardForm() {
               <label className="block text-xs font-medium text-neutral-500 mb-1">Balls</label>
               <input type="number" value={batter.balls} onChange={e => handleBatterChange(index, "balls", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
             </div>
-            <div className="col-span-2">
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">4s</label>
+              <input type="number" value={batter.fours} onChange={e => handleBatterChange(index, "fours", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">6s</label>
+              <input type="number" value={batter.sixes} onChange={e => handleBatterChange(index, "sixes", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
+            </div>
+            <div>
               <label className="block text-xs font-medium text-neutral-500 mb-1">Dismissal</label>
               <select
                 value={batter.dismissal} onChange={e => handleBatterChange(index, "dismissal", e.target.value)}
@@ -677,12 +940,72 @@ function ScorecardForm() {
                 <option>Caught</option>
                 <option>LBW</option>
                 <option>Run Out</option>
+                <option>Stumped</option>
+                <option>Hit Wicket</option>
+                <option>Retired Hurt</option>
+                <option>Did Not Bat</option>
               </select>
+            </div>
+            <div className="flex items-end pb-1">
+              {batters.length > 1 && (
+                <button onClick={() => handleRemoveBatter(index)} className="text-red-500/70 hover:text-red-400 text-xs">✕</button>
+              )}
             </div>
           </div>
         ))}
 
-        <button onClick={handleAddBatter} className="mt-4 text-sm text-emerald-500 hover:text-emerald-400 font-medium">+ Add another batter</button>
+        <button onClick={handleAddBatter} className="mt-2 text-sm text-emerald-500 hover:text-emerald-400 font-medium">+ Add another batter</button>
+      </div>
+
+      {/* Bowling Section */}
+      <div className="bg-neutral-950/50 p-6 rounded-xl border border-neutral-800/50 space-y-4">
+        <h3 className="text-lg font-medium text-cyan-400 flex items-center gap-2">
+          <Activity size={18} /> Bowling Figures
+        </h3>
+
+        {bowlers.map((bowler, index) => (
+          <div key={index} className="grid grid-cols-8 gap-3 items-end">
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Bowler</label>
+              <select
+                value={bowler.playerId} onChange={e => handleBowlerChange(index, "playerId", e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200">
+                <option value="">Select player...</option>
+                {players.map(p => <option key={p.player_id} value={p.player_id}>{p.player_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Overs</label>
+              <input type="number" step="0.1" value={bowler.overs} onChange={e => handleBowlerChange(index, "overs", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0.0" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Runs</label>
+              <input type="number" value={bowler.runs} onChange={e => handleBowlerChange(index, "runs", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Wkts</label>
+              <input type="number" value={bowler.wickets} onChange={e => handleBowlerChange(index, "wickets", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Mdns</label>
+              <input type="number" value={bowler.maidens} onChange={e => handleBowlerChange(index, "maidens", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200" placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">NB / Wd</label>
+              <div className="flex gap-1">
+                <input type="number" value={bowler.noBalls} onChange={e => handleBowlerChange(index, "noBalls", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-2 text-sm text-neutral-200" placeholder="0" />
+                <input type="number" value={bowler.wides} onChange={e => handleBowlerChange(index, "wides", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-2 text-sm text-neutral-200" placeholder="0" />
+              </div>
+            </div>
+            <div className="flex items-end pb-1">
+              {bowlers.length > 1 && (
+                <button onClick={() => handleRemoveBowler(index)} className="text-red-500/70 hover:text-red-400 text-xs">✕</button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <button onClick={handleAddBowler} className="mt-2 text-sm text-cyan-500 hover:text-cyan-400 font-medium">+ Add another bowler</button>
       </div>
 
       <button
@@ -720,42 +1043,94 @@ function StatsView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-neutral-400">
-          <thead className="bg-neutral-950/50 text-neutral-300 uppercase font-medium">
-            <tr>
-              <th className="px-4 py-4 rounded-tl-lg">Player Name</th>
-              <th className="px-4 py-4">Team</th>
-              <th className="px-4 py-4 text-right">Runs</th>
-              <th className="px-4 py-4 text-right">Bat Avg</th>
-              <th className="px-4 py-4 text-right">Wickets</th>
-              <th className="px-4 py-4 text-right rounded-tr-lg">Bowl Avg</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-800/50">
-            {stats.length === 0 ? (
+    <div className="space-y-8">
+      {/* Batting Stats */}
+      <div>
+        <h3 className="text-base font-semibold text-emerald-400 mb-3">Batting Statistics</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-neutral-400">
+            <thead className="bg-neutral-950/50 text-neutral-300 uppercase font-medium">
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
-                  No player statistics available yet.
-                </td>
+                <th className="px-4 py-4 rounded-tl-lg">Player</th>
+                <th className="px-4 py-4">Team</th>
+                <th className="px-4 py-4 text-right">Runs</th>
+                <th className="px-4 py-4 text-right">HS</th>
+                <th className="px-4 py-4 text-right">4s</th>
+                <th className="px-4 py-4 text-right">6s</th>
+                <th className="px-4 py-4 text-right">Avg</th>
+                <th className="px-4 py-4 text-right rounded-tr-lg">SR</th>
               </tr>
-            ) : (
-              stats.map(player => (
-                <tr key={player.player_id} className="hover:bg-neutral-800/20 transition-colors">
-                  <td className="px-4 py-4 font-medium text-neutral-200">{player.player_name}</td>
-                  <td className="px-4 py-4">{player.team_name || "N/A"}</td>
-                  <td className="px-4 py-4 text-right text-emerald-400 font-medium">{player.total_runs || 0}</td>
-                  <td className="px-4 py-4 text-right">{(player.batting_average != null) ? Number(player.batting_average).toFixed(2) : "0.00"}</td>
-                  <td className="px-4 py-4 text-right">{player.total_wickets || 0}</td>
-                  <td className="px-4 py-4 text-right">{(player.bowling_average != null) ? Number(player.bowling_average).toFixed(2) : "0.00"}</td>
+            </thead>
+            <tbody className="divide-y divide-neutral-800/50">
+              {stats.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-neutral-500">No player statistics available yet.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                stats.map(player => (
+                  <tr key={`bat-${player.player_id}`} className="hover:bg-neutral-800/20 transition-colors">
+                    <td className="px-4 py-4 font-medium text-neutral-200">{player.player_name}</td>
+                    <td className="px-4 py-4">{player.team_name || "N/A"}</td>
+                    <td className="px-4 py-4 text-right text-emerald-400 font-medium">{player.total_runs || 0}</td>
+                    <td className="px-4 py-4 text-right">{player.highest_score || 0}</td>
+                    <td className="px-4 py-4 text-right">{player.total_fours || 0}</td>
+                    <td className="px-4 py-4 text-right">{player.total_sixes || 0}</td>
+                    <td className="px-4 py-4 text-right">{player.batting_average != null ? Number(player.batting_average).toFixed(2) : "—"}</td>
+                    <td className="px-4 py-4 text-right">{player.batting_strike_rate != null ? Number(player.batting_strike_rate).toFixed(2) : "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <p className="text-xs text-neutral-500 text-center mt-4">
+
+      {/* Bowling Stats */}
+      <div>
+        <h3 className="text-base font-semibold text-cyan-400 mb-3">Bowling Statistics</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-neutral-400">
+            <thead className="bg-neutral-950/50 text-neutral-300 uppercase font-medium">
+              <tr>
+                <th className="px-4 py-4 rounded-tl-lg">Player</th>
+                <th className="px-4 py-4">Team</th>
+                <th className="px-4 py-4 text-right">Overs</th>
+                <th className="px-4 py-4 text-right">Mdns</th>
+                <th className="px-4 py-4 text-right">Runs</th>
+                <th className="px-4 py-4 text-right">Wkts</th>
+                <th className="px-4 py-4 text-right">Avg</th>
+                <th className="px-4 py-4 text-right">Econ</th>
+                <th className="px-4 py-4 text-right rounded-tr-lg">SR</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-800/50">
+              {stats.filter(p => (p.total_wickets || 0) > 0 || (p.overs_bowled || 0) > 0).length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-neutral-500">No bowling figures available yet.</td>
+                </tr>
+              ) : (
+                stats
+                  .filter(p => (p.total_wickets || 0) > 0 || (p.overs_bowled || 0) > 0)
+                  .map(player => (
+                    <tr key={`bowl-${player.player_id}`} className="hover:bg-neutral-800/20 transition-colors">
+                      <td className="px-4 py-4 font-medium text-neutral-200">{player.player_name}</td>
+                      <td className="px-4 py-4">{player.team_name || "N/A"}</td>
+                      <td className="px-4 py-4 text-right">{player.overs_bowled != null ? Number(player.overs_bowled).toFixed(1) : "0.0"}</td>
+                      <td className="px-4 py-4 text-right">{player.maiden_overs || 0}</td>
+                      <td className="px-4 py-4 text-right">{player.runs_conceded || 0}</td>
+                      <td className="px-4 py-4 text-right text-cyan-400 font-medium">{player.total_wickets || 0}</td>
+                      <td className="px-4 py-4 text-right">{player.bowling_average != null ? Number(player.bowling_average).toFixed(2) : "—"}</td>
+                      <td className="px-4 py-4 text-right">{player.economy_rate != null ? Number(player.economy_rate).toFixed(2) : "—"}</td>
+                      <td className="px-4 py-4 text-right">{player.bowling_strike_rate != null ? Number(player.bowling_strike_rate).toFixed(2) : "—"}</td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p className="text-xs text-neutral-500 text-center">
         * Statistics are dynamically calculated from the BCNF-compliant Oracle Database view.
       </p>
     </div>

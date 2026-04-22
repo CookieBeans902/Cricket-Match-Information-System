@@ -3,6 +3,30 @@ from typing import List, Optional
 from datetime import date
 from decimal import Decimal
 
+# Series Schemas
+class SeriesBase(BaseModel):
+    series_name: str
+    series_type: Optional[str] = "Bilateral"
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+class SeriesCreate(SeriesBase):
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "series_name": "India vs Australia 2024",
+                "series_type": "Bilateral",
+                "start_date": "2024-11-22",
+                "end_date": "2024-12-08"
+            }
+        }
+    }
+
+class Series(SeriesBase):
+    series_id: int
+    class Config:
+        from_attributes = True
+
 # Team Schemas
 class TeamBase(BaseModel):
     team_name: str
@@ -43,9 +67,14 @@ class Player(PlayerBase):
 class MatchBase(BaseModel):
     match_date: date
     venue: str
+    match_type: Optional[str] = "ODI"
     team1_id: int
     team2_id: int
     winner_team_id: Optional[int] = None
+    series_id: Optional[int] = None
+    toss_winner_id: Optional[int] = None
+    toss_decision: Optional[str] = None
+    man_of_match_id: Optional[int] = None
 
 class MatchCreate(MatchBase):
     pass
@@ -71,6 +100,8 @@ class BowlingStatsCreate(BaseModel):
     runs_conceded: int = 0
     wickets_taken: int = 0
     maidens: int = 0
+    no_balls: int = 0
+    wides: int = 0
 
 class InningsCreate(BaseModel):
     match_id: int
@@ -80,6 +111,7 @@ class InningsCreate(BaseModel):
     total_runs: int = 0
     total_wickets: int = 0
     extras: int = 0
+    overs_played: Decimal = Decimal('0.0')
     batting_stats: List[BattingStatsCreate] = []
     bowling_stats: List[BowlingStatsCreate] = []
 
@@ -106,6 +138,7 @@ class InningsDetail(Innings):
     total_runs: int
     total_wickets: int
     extras: int
+    overs_played: Decimal
     batting_stats: List[BattingStats] = []
     bowling_stats: List[BowlingStats] = []
 
@@ -117,11 +150,17 @@ class PlayerCareerStats(BaseModel):
     total_runs: int
     balls_faced: int
     highest_score: int
+    total_fours: int = 0
+    total_sixes: int = 0
     batting_average: Optional[Decimal] = None
     batting_strike_rate: Optional[Decimal] = None
     total_wickets: int
     runs_conceded: int
+    overs_bowled: Optional[Decimal] = None
+    maiden_overs: int = 0
     bowling_average: Optional[Decimal] = None
+    economy_rate: Optional[Decimal] = None
+    bowling_strike_rate: Optional[Decimal] = None
 
     class Config:
         from_attributes = True

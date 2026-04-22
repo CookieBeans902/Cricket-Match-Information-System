@@ -2,18 +2,34 @@ from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, Check
 from sqlalchemy.orm import relationship
 from database import Base
 
+class Series(Base):
+    __tablename__ = "series"
+    series_id = Column(Integer, primary_key=True)
+    series_name = Column(String(200), unique=True, nullable=False)
+    series_type = Column(String(50), default="Bilateral")
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "series_type IN ('Bilateral', 'Tournament', 'Tri-Series', 'Other')",
+            name='chk_series_type'
+        ),
+    )
+
+    matches = relationship("Match", back_populates="series")
+
 class Team(Base):
     __tablename__ = "team"
-    team_id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, primary_key=True)
     team_name = Column(String(100), unique=True, nullable=False)
     coach_name = Column(String(100))
 
     players = relationship("Player", back_populates="team")
-    # Matches where team is team1, team2 or winner can be mapped here if needed.
 
 class Player(Base):
     __tablename__ = "player"
-    player_id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, primary_key=True)
     player_name = Column(String(100), nullable=False)
     dob = Column(Date)
     batting_style = Column(String(50))
@@ -26,25 +42,35 @@ class Player(Base):
 
 class Match(Base):
     __tablename__ = "match"
-    match_id = Column(Integer, primary_key=True, index=True)
+    match_id = Column(Integer, primary_key=True)
     match_date = Column(Date, nullable=False)
     venue = Column(String(150), nullable=False)
+    match_type = Column(String(20), default="ODI")
     team1_id = Column(Integer, ForeignKey("team.team_id"), nullable=False)
     team2_id = Column(Integer, ForeignKey("team.team_id"), nullable=False)
     winner_team_id = Column(Integer, ForeignKey("team.team_id"), nullable=True)
+    series_id = Column(Integer, ForeignKey("series.series_id"), nullable=True)
+    toss_winner_id = Column(Integer, ForeignKey("team.team_id"), nullable=True)
+    toss_decision = Column(String(10), nullable=True)
+    man_of_match_id = Column(Integer, ForeignKey("player.player_id"), nullable=True)
 
     __table_args__ = (
         CheckConstraint('team1_id <> team2_id', name='chk_teams_different'),
+        CheckConstraint("match_type IN ('Test', 'ODI', 'T20I', 'T10', 'The Hundred', 'Other')", name='chk_match_type'),
+        CheckConstraint("toss_decision IN ('Bat', 'Bowl')", name='chk_toss_decision'),
     )
 
     innings = relationship("Innings", back_populates="match")
     team1 = relationship("Team", foreign_keys=[team1_id])
     team2 = relationship("Team", foreign_keys=[team2_id])
     winner_team = relationship("Team", foreign_keys=[winner_team_id])
+    series = relationship("Series", back_populates="matches")
+    toss_winner = relationship("Team", foreign_keys=[toss_winner_id])
+    man_of_match = relationship("Player", foreign_keys=[man_of_match_id])
 
 class Innings(Base):
     __tablename__ = "innings"
-    innings_id = Column(Integer, primary_key=True, index=True)
+    innings_id = Column(Integer, primary_key=True)
     match_id = Column(Integer, ForeignKey("match.match_id", ondelete="CASCADE"), nullable=False)
     innings_number = Column(Integer, nullable=False)
     batting_team_id = Column(Integer, ForeignKey("team.team_id"), nullable=False)
@@ -52,6 +78,7 @@ class Innings(Base):
     total_runs = Column(Integer, default=0)
     total_wickets = Column(Integer, default=0)
     extras = Column(Integer, default=0)
+    overs_played = Column(Numeric(5, 1), default=0)
 
     __table_args__ = (
         CheckConstraint('innings_number IN (1, 2, 3, 4)', name='chk_innings_number'),
@@ -87,6 +114,8 @@ class BowlingStats(Base):
     runs_conceded = Column(Integer, default=0)
     wickets_taken = Column(Integer, default=0)
     maidens = Column(Integer, default=0)
+    no_balls = Column(Integer, default=0)
+    wides = Column(Integer, default=0)
 
     player = relationship("Player", back_populates="bowling_stats")
     innings = relationship("Innings", back_populates="bowling_stats")
@@ -100,8 +129,14 @@ class PlayerCareerStats(Base):
     total_runs = Column(Integer)
     balls_faced = Column(Integer)
     highest_score = Column(Integer)
+    total_fours = Column(Integer)
+    total_sixes = Column(Integer)
     batting_average = Column(Numeric)
     batting_strike_rate = Column(Numeric)
     total_wickets = Column(Integer)
-    runs_conceded = Column(Integer)
+    runs_conceded = Column(Numeric)
+    overs_bowled = Column(Numeric)
+    maiden_overs = Column(Integer)
     bowling_average = Column(Numeric)
+    economy_rate = Column(Numeric)
+    bowling_strike_rate = Column(Numeric)
