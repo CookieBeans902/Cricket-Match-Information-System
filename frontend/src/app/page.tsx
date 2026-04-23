@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Users, Shield, Trophy, FileText, Activity, CalendarRange } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import LiquidEther from "@/components/LiquidEther";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("teams");
@@ -27,7 +28,22 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-neutral-100 font-sans selection:bg-green-500/30 overflow-hidden">
+    <div className="relative min-h-screen bg-black text-neutral-100 font-sans selection:bg-green-500/30 overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none w-full h-full z-0">
+        <LiquidEther
+          mouseForce={20}
+          cursorSize={100}
+          isViscous
+          viscous={30}
+          colors={["#22c55e", "#4ade80", "#10b981"]}
+          autoDemo
+          autoSpeed={0.5}
+          autoIntensity={2.2}
+          isBounce={false}
+          resolution={0.5}
+          className="w-full h-full"
+        />
+      </div>
       {/* Sidebar */}
       <motion.aside 
         initial={{ x: -300 }}
@@ -101,7 +117,7 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-10 max-w-6xl">
+      <main className="ml-64 p-10 max-w-6xl relative z-10 w-full min-h-screen">
         <header className="mb-10">
           <motion.h2 
             initial={{ opacity: 0, y: -20 }}
@@ -184,7 +200,7 @@ function TeamForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("http://localhost:8000/teams/", {
+      const response = await fetch("http://98.70.29.111:8000/teams/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

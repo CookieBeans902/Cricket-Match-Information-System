@@ -61,3 +61,5 @@ Desktop.ini
 # Python
 .venv/
 __pycache__/
+Frontend_goal
+**test.py
