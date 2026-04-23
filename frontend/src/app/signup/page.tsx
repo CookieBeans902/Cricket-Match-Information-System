@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/constants";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +24,7 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8000/auth/send-otp', {
+            const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: formData.email }),
@@ -48,7 +49,7 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8000/auth/signup', {
+            const res = await fetch(`${API_BASE_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
