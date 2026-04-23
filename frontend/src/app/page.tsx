@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE_URL } from "@/lib/constants";
 import { useState, useEffect } from "react";
 import { Users, Shield, Trophy, FileText, Activity, CalendarRange } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -184,7 +185,7 @@ function TeamForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("http://localhost:8000/teams/", {
+      const response = await fetch(`${API_BASE_URL}/teams/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -267,7 +268,7 @@ function SeriesForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("http://localhost:8000/series/", {
+      const response = await fetch(`${API_BASE_URL}/series/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -366,7 +367,7 @@ function PlayerForm() {
   const [message, setMessage] = useState({ text: "", type: "" });
 
   useEffect(() => {
-    fetch("http://localhost:8000/teams/")
+    fetch(`${API_BASE_URL}/teams/`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -386,7 +387,7 @@ function PlayerForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("http://localhost:8000/players/", {
+      const response = await fetch(`${API_BASE_URL}/players/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -512,9 +513,9 @@ function MatchForm() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:8000/teams/").then(res => res.json()),
-      fetch("http://localhost:8000/series/").then(res => res.json()),
-      fetch("http://localhost:8000/players/").then(res => res.json()),
+      fetch(`${API_BASE_URL}/teams/`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/series/`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/players/`).then(res => res.json()),
     ]).then(([teamsData, seriesData, playersData]) => {
       if (Array.isArray(teamsData)) setTeams(teamsData);
       if (Array.isArray(seriesData)) setSeriesList(seriesData);
@@ -537,7 +538,7 @@ function MatchForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("http://localhost:8000/matches/", {
+      const response = await fetch(`${API_BASE_URL}/matches/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -747,9 +748,9 @@ function ScorecardForm() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:8000/matches/").then(res => res.json()),
-      fetch("http://localhost:8000/teams/").then(res => res.json()),
-      fetch("http://localhost:8000/players/").then(res => res.json())
+      fetch(`${API_BASE_URL}/matches/`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/teams/`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/players/`).then(res => res.json())
     ]).then(([matchesData, teamsData, playersData]) => {
       if (Array.isArray(matchesData)) setMatches(matchesData);
       if (Array.isArray(teamsData)) setTeams(teamsData);
@@ -795,7 +796,7 @@ function ScorecardForm() {
     setMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch(`http://localhost:8000/innings/${matchId}/${inningsNumber}`);
+      const response = await fetch(`${API_BASE_URL}/innings/${matchId}/${inningsNumber}`);
       if (!response.ok) {
         throw new Error("Scorecard not found");
       }
@@ -877,7 +878,7 @@ function ScorecardForm() {
       }));
 
     try {
-      const response = await fetch("http://localhost:8000/innings/", {
+      const response = await fetch(`${API_BASE_URL}/innings/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1127,7 +1128,7 @@ function StatsView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/stats/players")
+    fetch(`${API_BASE_URL}/stats/players`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
