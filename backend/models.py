@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, CheckConstraint, Boolean
+from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, CheckConstraint, Boolean, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -78,9 +78,8 @@ class Match(Base):
 
 class Innings(Base):
     __tablename__ = "innings"
-    innings_id = Column(Integer, primary_key=True)
-    match_id = Column(Integer, ForeignKey("match.match_id", ondelete="CASCADE"), nullable=False)
-    innings_number = Column(Integer, nullable=False)
+    match_id = Column(Integer, ForeignKey("match.match_id", ondelete="CASCADE"), primary_key=True, nullable=False)
+    innings_number = Column(Integer, primary_key=True, nullable=False)
     batting_team_id = Column(Integer, ForeignKey("team.team_id"), nullable=False)
     bowling_team_id = Column(Integer, ForeignKey("team.team_id"), nullable=False)
     total_runs = Column(Integer, default=0)
@@ -102,13 +101,22 @@ class Innings(Base):
 class BattingStats(Base):
     __tablename__ = "batting_stats"
     player_id = Column(Integer, ForeignKey("player.player_id"), primary_key=True)
-    innings_id = Column(Integer, ForeignKey("innings.innings_id", ondelete="CASCADE"), primary_key=True)
+    match_id = Column(Integer, primary_key=True)
+    innings_number = Column(Integer, primary_key=True)
     runs_scored = Column(Integer, default=0)
     balls_faced = Column(Integer, default=0)
     fours = Column(Integer, default=0)
     sixes = Column(Integer, default=0)
     dismissal_type = Column(String(50), default='Did Not Bat')
     bowler_id = Column(Integer, ForeignKey("player.player_id"), nullable=True)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['match_id', 'innings_number'],
+            ['innings.match_id', 'innings.innings_number'],
+            ondelete="CASCADE"
+        ),
+    )
 
     player = relationship("Player", back_populates="batting_stats", foreign_keys=[player_id])
     innings = relationship("Innings", back_populates="batting_stats")
@@ -117,13 +125,22 @@ class BattingStats(Base):
 class BowlingStats(Base):
     __tablename__ = "bowling_stats"
     player_id = Column(Integer, ForeignKey("player.player_id"), primary_key=True)
-    innings_id = Column(Integer, ForeignKey("innings.innings_id", ondelete="CASCADE"), primary_key=True)
+    match_id = Column(Integer, primary_key=True)
+    innings_number = Column(Integer, primary_key=True)
     overs_bowled = Column(Numeric(5, 1), default=0)
     runs_conceded = Column(Integer, default=0)
     wickets_taken = Column(Integer, default=0)
     maidens = Column(Integer, default=0)
     no_balls = Column(Integer, default=0)
     wides = Column(Integer, default=0)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['match_id', 'innings_number'],
+            ['innings.match_id', 'innings.innings_number'],
+            ondelete="CASCADE"
+        ),
+    )
 
     player = relationship("Player", back_populates="bowling_stats")
     innings = relationship("Innings", back_populates="bowling_stats")

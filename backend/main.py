@@ -142,7 +142,8 @@ def create_innings_scorecard(innings_data: schemas.InningsCreate, db: Session = 
     for bat_stat in innings_data.batting_stats:
         db_bat_stat = models.BattingStats(
             player_id=bat_stat.player_id,
-            innings_id=db_innings.innings_id,
+            match_id=db_innings.match_id,
+            innings_number=db_innings.innings_number,
             runs_scored=bat_stat.runs_scored,
             balls_faced=bat_stat.balls_faced,
             fours=bat_stat.fours,
@@ -156,7 +157,8 @@ def create_innings_scorecard(innings_data: schemas.InningsCreate, db: Session = 
     for bowl_stat in innings_data.bowling_stats:
         db_bowl_stat = models.BowlingStats(
             player_id=bowl_stat.player_id,
-            innings_id=db_innings.innings_id,
+            match_id=db_innings.match_id,
+            innings_number=db_innings.innings_number,
             overs_bowled=bowl_stat.overs_bowled,
             runs_conceded=bowl_stat.runs_conceded,
             wickets_taken=bowl_stat.wickets_taken,
@@ -167,6 +169,64 @@ def create_innings_scorecard(innings_data: schemas.InningsCreate, db: Session = 
         db.add(db_bowl_stat)
 
     db.commit()
+    return db_innings
+
+@app.put("/innings/{match_id}/{innings_number}", response_model=schemas.Innings)
+def update_innings_scorecard(match_id: int, innings_number: int, innings_data: schemas.InningsCreate, db: Session = Depends(database.get_db)):
+    db_innings = db.query(models.Innings).filter(
+        models.Innings.match_id == match_id,
+        models.Innings.innings_number == innings_number
+    ).one_or_none()
+
+    if not db_innings:
+        raise HTTPException(status_code=404, detail="Innings not found")
+
+    db_innings.batting_team_id = innings_data.batting_team_id
+    db_innings.bowling_team_id = innings_data.bowling_team_id
+    db_innings.total_runs = innings_data.total_runs
+    db_innings.total_wickets = innings_data.total_wickets
+    db_innings.extras = innings_data.extras
+    db_innings.overs_played = innings_data.overs_played
+
+    db.query(models.BattingStats).filter(
+        models.BattingStats.match_id == match_id,
+        models.BattingStats.innings_number == innings_number
+    ).delete()
+    db.query(models.BowlingStats).filter(
+        models.BowlingStats.match_id == match_id,
+        models.BowlingStats.innings_number == innings_number
+    ).delete()
+
+    for bat_stat in innings_data.batting_stats:
+        db_bat_stat = models.BattingStats(
+            player_id=bat_stat.player_id,
+            match_id=db_innings.match_id,
+            innings_number=db_innings.innings_number,
+            runs_scored=bat_stat.runs_scored,
+            balls_faced=bat_stat.balls_faced,
+            fours=bat_stat.fours,
+            sixes=bat_stat.sixes,
+            dismissal_type=bat_stat.dismissal_type,
+            bowler_id=bat_stat.bowler_id,
+        )
+        db.add(db_bat_stat)
+
+    for bowl_stat in innings_data.bowling_stats:
+        db_bowl_stat = models.BowlingStats(
+            player_id=bowl_stat.player_id,
+            match_id=db_innings.match_id,
+            innings_number=db_innings.innings_number,
+            overs_bowled=bowl_stat.overs_bowled,
+            runs_conceded=bowl_stat.runs_conceded,
+            wickets_taken=bowl_stat.wickets_taken,
+            maidens=bowl_stat.maidens,
+            no_balls=bowl_stat.no_balls,
+            wides=bowl_stat.wides,
+        )
+        db.add(db_bowl_stat)
+
+    db.commit()
+    db.refresh(db_innings)
     return db_innings
 
 @app.get("/innings/{match_id}/{innings_number}", response_model=schemas.InningsDetail)

@@ -894,8 +894,17 @@ function ScorecardForm() {
       }));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/innings/`, {
-        method: "POST",
+      const checkRes = await fetch(`${API_BASE_URL}/innings/${matchId}/${inningsNumber}`);
+      let url = `${API_BASE_URL}/innings/`;
+      let method = "POST";
+
+      if (checkRes.ok) {
+        url = `${API_BASE_URL}/innings/${matchId}/${inningsNumber}`;
+        method = "PUT";
+      }
+
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           match_id: parseInt(matchId),

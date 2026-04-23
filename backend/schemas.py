@@ -144,19 +144,20 @@ class InningsCreate(BaseModel):
     bowling_stats: List[BowlingStatsCreate] = []
 
 class Innings(BaseModel):
-    innings_id: int
     match_id: int
     innings_number: int
     class Config:
         from_attributes = True
 
 class BattingStats(BattingStatsCreate):
-    innings_id: int
+    match_id: int
+    innings_number: int
     class Config:
         from_attributes = True
 
 class BowlingStats(BowlingStatsCreate):
-    innings_id: int
+    match_id: int
+    innings_number: int
     class Config:
         from_attributes = True
 
