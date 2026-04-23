@@ -14,13 +14,9 @@ load_dotenv()
 app = FastAPI(title="Cricket Match Information System")
 
 # Configure CORS for Next.js frontend
-origins = [
-    "http://localhost:3000",
-    os.getenv("FRONTEND_URL"),
-]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
