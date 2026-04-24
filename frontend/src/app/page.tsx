@@ -743,7 +743,8 @@ function MatchForm() {
 
 function ScorecardForm() {
   const [matches, setMatches] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
+  const [allTeams, setAllTeams] = useState<any[]>([]);
+  const [matchTeams, setMatchTeams] = useState<any[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
 
   const [matchId, setMatchId] = useState("");
@@ -769,10 +770,29 @@ function ScorecardForm() {
       fetch(`${API_BASE_URL}/players/`).then(res => res.json())
     ]).then(([matchesData, teamsData, playersData]) => {
       if (Array.isArray(matchesData)) setMatches(matchesData);
-      if (Array.isArray(teamsData)) setTeams(teamsData);
+      if (Array.isArray(teamsData)) setAllTeams(teamsData);
       if (Array.isArray(playersData)) setPlayers(playersData);
     }).catch(err => console.error("Failed to fetch scorecard data:", err));
   }, []);
+
+  // When a match is selected, derive the two teams from matches data
+  const handleMatchChange = (selectedMatchId: string) => {
+    setMatchId(selectedMatchId);
+    setBattingTeamId("");
+    setBowlingTeamId("");
+    if (!selectedMatchId) {
+      setMatchTeams([]);
+      return;
+    }
+    const selectedMatch = matches.find(m => String(m.match_id) === selectedMatchId);
+    if (selectedMatch) {
+      const t1 = allTeams.find(t => t.team_id === selectedMatch.team1_id);
+      const t2 = allTeams.find(t => t.team_id === selectedMatch.team2_id);
+      setMatchTeams([t1, t2].filter(Boolean));
+    } else {
+      setMatchTeams([]);
+    }
+  };
 
   const handleAddBatter = () => {
     setBatters([...batters, { playerId: "", runs: "", balls: "", fours: "", sixes: "", dismissal: "Not Out" }]);
@@ -953,14 +973,18 @@ function ScorecardForm() {
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Select Match</label>
           <select
-            value={matchId} onChange={e => setMatchId(e.target.value)}
+            value={matchId} onChange={e => handleMatchChange(e.target.value)}
             className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
             <option value="">Select match...</option>
-            {matches.map(m => (
-              <option key={m.match_id} value={m.match_id}>
-                {m.match_date} — {m.venue}
-              </option>
-            ))}
+            {matches.map(m => {
+              const t1 = allTeams.find(t => t.team_id === m.team1_id);
+              const t2 = allTeams.find(t => t.team_id === m.team2_id);
+              return (
+                <option key={m.match_id} value={m.match_id}>
+                  {t1?.team_name || 'Team ' + m.team1_id} vs {t2?.team_name || 'Team ' + m.team2_id} — {m.match_date} — {m.venue}
+                </option>
+              );
+            })}
           </select>
         </div>
         <div>
@@ -989,18 +1013,20 @@ function ScorecardForm() {
           <label className="block text-sm font-medium text-neutral-400 mb-2">Batting Team</label>
           <select
             value={battingTeamId} onChange={e => setBattingTeamId(e.target.value)}
-            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
-            <option value="">Select team...</option>
-            {teams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+            disabled={!matchId}
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)] disabled:opacity-40 disabled:cursor-not-allowed">
+            <option value="">{matchId ? "Select team..." : "Select a match first"}</option>
+            {matchTeams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Bowling Team</label>
           <select
             value={bowlingTeamId} onChange={e => setBowlingTeamId(e.target.value)}
-            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]">
-            <option value="">Select team...</option>
-            {teams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+            disabled={!matchId}
+            className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)] disabled:opacity-40 disabled:cursor-not-allowed">
+            <option value="">{matchId ? "Select team..." : "Select a match first"}</option>
+            {matchTeams.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
           </select>
         </div>
       </div>
