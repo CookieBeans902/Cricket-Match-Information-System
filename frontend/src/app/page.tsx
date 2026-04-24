@@ -928,6 +928,7 @@ function ScorecardForm() {
   const [allTeams, setAllTeams] = useState<any[]>([]);
   const [matchTeams, setMatchTeams] = useState<any[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
+  const [seriesList, setSeriesList] = useState<any[]>([]);
 
   const [matchId, setMatchId] = useState("");
   const [inningsNumber, setInningsNumber] = useState("1");
@@ -949,13 +950,32 @@ function ScorecardForm() {
     Promise.all([
       fetch(`${API_BASE_URL}/matches/`).then(res => res.json()),
       fetch(`${API_BASE_URL}/teams/`).then(res => res.json()),
-      fetch(`${API_BASE_URL}/players/`).then(res => res.json())
-    ]).then(([matchesData, teamsData, playersData]) => {
+      fetch(`${API_BASE_URL}/players/`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/series/`).then(res => res.json()),
+    ]).then(([matchesData, teamsData, playersData, seriesData]) => {
       if (Array.isArray(matchesData)) setMatches(matchesData);
       if (Array.isArray(teamsData)) setAllTeams(teamsData);
       if (Array.isArray(playersData)) setPlayers(playersData);
+      if (Array.isArray(seriesData)) setSeriesList(seriesData);
     }).catch(err => console.error("Failed to fetch scorecard data:", err));
   }, []);
+
+  // Helper to resolve names from IDs
+  const getTeamName = (id: number | null) => {
+    if (!id) return "—";
+    return allTeams.find(t => t.team_id === id)?.team_name || "Unknown";
+  };
+  const getSeriesName = (id: number | null) => {
+    if (!id) return "—";
+    return seriesList.find(s => s.series_id === id)?.series_name || "Unknown";
+  };
+  const getPlayerName = (id: number | null) => {
+    if (!id) return "—";
+    return players.find(p => p.player_id === id)?.player_name || "Unknown";
+  };
+
+  // Get selected match info
+  const selectedMatch = matchId ? matches.find(m => String(m.match_id) === matchId) : null;
 
   // When a match is selected, derive the two teams from matches data
   const handleMatchChange = (selectedMatchId: string) => {
@@ -966,10 +986,10 @@ function ScorecardForm() {
       setMatchTeams([]);
       return;
     }
-    const selectedMatch = matches.find(m => String(m.match_id) === selectedMatchId);
-    if (selectedMatch) {
-      const t1 = allTeams.find(t => t.team_id === selectedMatch.team1_id);
-      const t2 = allTeams.find(t => t.team_id === selectedMatch.team2_id);
+    const match = matches.find(m => String(m.match_id) === selectedMatchId);
+    if (match) {
+      const t1 = allTeams.find(t => t.team_id === match.team1_id);
+      const t2 = allTeams.find(t => t.team_id === match.team2_id);
       setMatchTeams([t1, t2].filter(Boolean));
     } else {
       setMatchTeams([]);
@@ -1191,6 +1211,62 @@ function ScorecardForm() {
             Fetch Match Saved Details
           </motion.button>
         </div>
+      </div>
+
+      {/* Match Info Panel */}
+      {selectedMatch && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="bg-neutral-950/60 border border-green-500/10 rounded-xl p-5 mb-2"
+        >
+          <h4 className="text-sm font-semibold text-emerald-400 mb-3 uppercase tracking-wider">Match Information</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Date</span>
+              <span className="text-sm text-neutral-200 font-medium">{selectedMatch.match_date || "—"}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Venue</span>
+              <span className="text-sm text-neutral-200 font-medium">{selectedMatch.venue || "—"}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Match Type</span>
+              <span className="text-sm text-neutral-200 font-medium">{selectedMatch.match_type || "—"}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Series</span>
+              <span className="text-sm text-neutral-200 font-medium">{getSeriesName(selectedMatch.series_id)}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Team 1</span>
+              <span className="text-sm text-neutral-200 font-medium">{getTeamName(selectedMatch.team1_id)}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Team 2</span>
+              <span className="text-sm text-neutral-200 font-medium">{getTeamName(selectedMatch.team2_id)}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Toss Winner</span>
+              <span className="text-sm text-neutral-200 font-medium">{getTeamName(selectedMatch.toss_winner_id)}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Toss Decision</span>
+              <span className="text-sm text-neutral-200 font-medium">{selectedMatch.toss_decision || "—"}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Winner</span>
+              <span className="text-sm text-neutral-200 font-medium">{getTeamName(selectedMatch.winner_team_id)}</span>
+            </div>
+            <div>
+              <span className="block text-xs text-neutral-500 mb-1">Man of the Match</span>
+              <span className="text-sm text-neutral-200 font-medium">{getPlayerName(selectedMatch.man_of_match_id)}</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-neutral-400 mb-2">Batting Team</label>
           <select
