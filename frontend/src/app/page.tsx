@@ -8,14 +8,14 @@ import LiquidEther from "@/components/LiquidEther";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("teams");
-  const [user, setUser] = useState<{username: string, email: string} | null>(null);
+  const [user, setUser] = useState<{ username: string, email: string } | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -46,14 +46,14 @@ export default function Dashboard() {
         />
       </div>
       {/* Sidebar */}
-      <motion.aside 
+      <motion.aside
         initial={{ x: -300 }}
         animate={{ x: 0 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
         className="fixed inset-y-0 left-0 w-64 bg-neutral-950/80 backdrop-blur-xl border-r border-green-500/20 p-6 flex flex-col z-50 shadow-[4px_0_24px_rgba(34,197,94,0.1)]"
       >
         <div className="flex items-center gap-3 mb-10">
-          <motion.div 
+          <motion.div
             whileHover={{ rotate: 180, scale: 1.1 }}
             transition={{ type: "spring", stiffness: 200, damping: 10 }}
             className="bg-green-500 p-2 rounded-lg text-black shadow-[0_0_15px_rgba(34,197,94,0.5)]"
@@ -74,12 +74,12 @@ export default function Dashboard() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden ${isActive
-                    ? "bg-green-500/20 text-green-400 font-medium border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
-                    : "text-neutral-400 hover:bg-green-500/10 hover:text-green-300"
+                  ? "bg-green-500/20 text-green-400 font-medium border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+                  : "text-neutral-400 hover:bg-green-500/10 hover:text-green-300"
                   }`}
               >
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="activeTabIndicator"
                     className="absolute left-0 top-0 bottom-0 w-1 bg-green-500"
                     initial={false}
@@ -103,7 +103,7 @@ export default function Dashboard() {
               <p className="text-xs text-neutral-500 truncate" title={user?.email || "admin@cricmanager.com"}>{user ? user.email : "admin@cricmanager.com"}</p>
             </div>
             {user && (
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => { localStorage.removeItem('user'); setUser(null); }}
@@ -120,7 +120,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="ml-64 p-10 max-w-6xl relative z-10 w-full min-h-screen">
         <header className="mb-10">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             key={activeTab}
@@ -128,7 +128,7 @@ export default function Dashboard() {
           >
             {tabs.find((t) => t.id === activeTab)?.name}
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -138,27 +138,27 @@ export default function Dashboard() {
           </motion.p>
         </header>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
           className="bg-neutral-900/50 backdrop-blur-md border border-green-500/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(34,197,94,0.05)] relative overflow-hidden"
         >
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.2, 1],
               opacity: [0.3, 0.5, 0.3],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 blur-[100px] rounded-full pointer-events-none" 
+            className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 blur-[100px] rounded-full pointer-events-none"
           />
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.5, 1],
               opacity: [0.1, 0.3, 0.1],
             }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" 
+            className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"
           />
 
           <div className="relative z-10 w-full min-h-[400px]">
@@ -245,7 +245,7 @@ function TeamForm() {
       const response = await fetch(`${API_BASE_URL}/teams/${teamId}`, { method: "DELETE" });
       if (!response.ok) {
         let errMsg = "Failed to delete team.";
-        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch {}
+        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch { }
         throw new Error(errMsg);
       }
       const data = await response.json();
@@ -277,7 +277,7 @@ function TeamForm() {
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
           className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
-          placeholder="e.g. Mumbai Indians"
+          placeholder="e.g. Rudra Rationals"
         />
       </div>
       <div>
@@ -287,7 +287,7 @@ function TeamForm() {
           value={coachName}
           onChange={(e) => setCoachName(e.target.value)}
           className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
-          placeholder="e.g. Mahela Jayawardene"
+          placeholder="e.g. Rudra The Great"
         />
       </div>
       <motion.button
@@ -414,7 +414,7 @@ function SeriesForm() {
           value={seriesName}
           onChange={(e) => setSeriesName(e.target.value)}
           className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-          placeholder="e.g. India vs Australia 2024"
+          placeholder="e.g. MnC Vs CSE"
         />
       </div>
       <div>
@@ -539,7 +539,7 @@ function PlayerForm() {
       const response = await fetch(`${API_BASE_URL}/players/${playerId}`, { method: "DELETE" });
       if (!response.ok) {
         let errMsg = "Failed to delete player.";
-        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch {}
+        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch { }
         throw new Error(errMsg);
       }
       const data = await response.json();
@@ -576,7 +576,7 @@ function PlayerForm() {
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
-          placeholder="e.g. Virat Kohli"
+          placeholder="e.g. Rudra Of Course"
         />
       </div>
       <div>
@@ -781,7 +781,7 @@ function MatchForm() {
   return (
     <div className="space-y-6 max-w-lg w-full">
       {message.text && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]'}`}
@@ -822,7 +822,7 @@ function MatchForm() {
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
           className="w-full bg-black border border-green-500/30 rounded-lg px-4 py-3 text-neutral-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all shadow-[inset_0_0_10px_rgba(34,197,94,0.05)]"
-          placeholder="e.g. Wankhede Stadium"
+          placeholder="e.g. IIT Indore"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -1142,7 +1142,7 @@ function ScorecardForm() {
   return (
     <div className="space-y-6 w-full">
       {message.text && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]'}`}

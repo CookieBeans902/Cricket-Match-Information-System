@@ -16,7 +16,7 @@ def send_otp_email(receiver_email, otp) -> bool:
         from_email="chitkararudra946@gmail.com",
         to_emails=receiver_email,
         subject="OTP FOR Our Cricket APP",
-        html_content=f"<strong>Your OTP is {otp}. Hey Buddy.</strong>",
+        html_content=f"<strong>Your OTP is {otp}. Enjoyy Buddy.</strong>",
     )
     try:
         sg = mail_client
