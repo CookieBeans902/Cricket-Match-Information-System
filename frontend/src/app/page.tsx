@@ -2,11 +2,13 @@
 
 import { API_BASE_URL } from "@/lib/constants";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Users, Shield, Trophy, FileText, Activity, CalendarRange, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LiquidEther from "@/components/LiquidEther";
 
 export default function Dashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("teams");
   const [user, setUser] = useState<{ username: string, email: string } | null>(null);
 
@@ -106,7 +108,7 @@ export default function Dashboard() {
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => { localStorage.removeItem('user'); setUser(null); }}
+                onClick={() => { localStorage.removeItem('user'); setUser(null); router.push('/user'); }}
                 className="ml-auto p-1.5 hover:bg-red-500/10 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
                 title="Logout"
               >
