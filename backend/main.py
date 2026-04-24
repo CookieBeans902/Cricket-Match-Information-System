@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List
 import secrets
 import os
@@ -89,6 +90,47 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(database.get_db)
 def get_teams(db: Session = Depends(database.get_db)):
     return db.query(models.Team).all()
 
+@app.delete("/teams/{team_id}")
+def delete_team(team_id: int, db: Session = Depends(database.get_db)):
+    db_team = db.query(models.Team).filter(models.Team.team_id == team_id).first()
+    if not db_team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # 1. Delete innings where this team is batting or bowling
+    db.query(models.Innings).filter(
+        or_(models.Innings.batting_team_id == team_id, models.Innings.bowling_team_id == team_id)
+    ).delete(synchronize_session="fetch")
+
+    # 2. Delete matches that reference this team
+    db.query(models.Match).filter(
+        or_(
+            models.Match.team1_id == team_id,
+            models.Match.team2_id == team_id,
+            models.Match.winner_team_id == team_id,
+            models.Match.toss_winner_id == team_id,
+        )
+    ).delete(synchronize_session="fetch")
+
+    # 3. Delete all players' stats, then the players themselves
+    #    (ORM tries to NULL team_id before DB CASCADE, which fails on NOT NULL)
+    player_ids = [p.player_id for p in db.query(models.Player).filter(models.Player.team_id == team_id).all()]
+    if player_ids:
+        db.query(models.BattingStats).filter(
+            or_(models.BattingStats.player_id.in_(player_ids), models.BattingStats.bowler_id.in_(player_ids))
+        ).delete(synchronize_session="fetch")
+        db.query(models.BowlingStats).filter(
+            models.BowlingStats.player_id.in_(player_ids)
+        ).delete(synchronize_session="fetch")
+        db.query(models.Match).filter(
+            models.Match.man_of_match_id.in_(player_ids)
+        ).update({models.Match.man_of_match_id: None}, synchronize_session="fetch")
+        db.query(models.Player).filter(models.Player.team_id == team_id).delete(synchronize_session="fetch")
+
+    # 4. Delete the team
+    db.delete(db_team)
+    db.commit()
+    return {"message": f"Team '{db_team.team_name}' and all related data deleted successfully."}
+
 # Endpoints for Player
 
 @app.post("/players/", response_model=schemas.Player)
@@ -102,6 +144,32 @@ def create_player(player: schemas.PlayerCreate, db: Session = Depends(database.g
 @app.get("/players/", response_model=List[schemas.Player])
 def get_players(db: Session = Depends(database.get_db)):
     return db.query(models.Player).all()
+
+@app.delete("/players/{player_id}")
+def delete_player(player_id: int, db: Session = Depends(database.get_db)):
+    db_player = db.query(models.Player).filter(models.Player.player_id == player_id).first()
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    # 1. Clear man_of_match references
+    db.query(models.Match).filter(
+        models.Match.man_of_match_id == player_id
+    ).update({models.Match.man_of_match_id: None}, synchronize_session="fetch")
+
+    # 2. Delete batting stats (as player or as bowler)
+    db.query(models.BattingStats).filter(
+        or_(models.BattingStats.player_id == player_id, models.BattingStats.bowler_id == player_id)
+    ).delete(synchronize_session="fetch")
+
+    # 3. Delete bowling stats
+    db.query(models.BowlingStats).filter(
+        models.BowlingStats.player_id == player_id
+    ).delete(synchronize_session="fetch")
+
+    # 4. Delete the player
+    db.delete(db_player)
+    db.commit()
+    return {"message": f"Player '{db_player.player_name}' and all related stats deleted successfully."}
 
 # Endpoints for Match
 

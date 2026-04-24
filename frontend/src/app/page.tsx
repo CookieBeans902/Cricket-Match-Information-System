@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from "@/lib/constants";
 import { useState, useEffect } from "react";
-import { Users, Shield, Trophy, FileText, Activity, CalendarRange } from "lucide-react";
+import { Users, Shield, Trophy, FileText, Activity, CalendarRange, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LiquidEther from "@/components/LiquidEther";
 
@@ -190,6 +190,17 @@ function TeamForm() {
   const [coachName, setCoachName] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const [teams, setTeams] = useState<any[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+
+  const fetchTeams = () => {
+    fetch(`${API_BASE_URL}/teams/`)
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setTeams(data); })
+      .catch(err => console.error("Failed to fetch teams:", err));
+  };
+
+  useEffect(() => { fetchTeams(); }, []);
 
   const handleCreateTeam = async () => {
     if (!teamName) {
@@ -219,6 +230,28 @@ function TeamForm() {
       setMessage({ text: "New team created successfully!", type: "success" });
       setTeamName("");
       setCoachName("");
+      fetchTeams();
+    } catch (error: any) {
+      setMessage({ text: error.message || "An error occurred", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTeam = async (teamId: number) => {
+    setLoading(true);
+    setMessage({ text: "", type: "" });
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${teamId}`, { method: "DELETE" });
+      if (!response.ok) {
+        let errMsg = "Failed to delete team.";
+        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch {}
+        throw new Error(errMsg);
+      }
+      const data = await response.json();
+      setMessage({ text: data.message || "Team deleted successfully!", type: "success" });
+      setDeleteConfirm(null);
+      fetchTeams();
     } catch (error: any) {
       setMessage({ text: error.message || "An error occurred", type: "error" });
     } finally {
@@ -227,11 +260,15 @@ function TeamForm() {
   };
 
   return (
-    <div className="space-y-6 max-w-md">
+    <div className="space-y-6 max-w-lg">
       {message.text && (
-        <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}
+        >
           {message.text}
-        </div>
+        </motion.div>
       )}
       <div>
         <label className="block text-sm font-medium text-neutral-400 mb-2">Team Name</label>
@@ -262,6 +299,58 @@ function TeamForm() {
       >
         {loading ? "Creating..." : "Create Team"}
       </motion.button>
+
+      {/* Existing Teams List */}
+      {teams.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-green-500/20">
+          <h3 className="text-base font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+            <Users size={18} /> Existing Teams ({teams.length})
+          </h3>
+          <div className="space-y-2">
+            {teams.map((t) => (
+              <motion.div
+                key={t.team_id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between bg-neutral-950/60 border border-neutral-800/50 rounded-lg px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-neutral-200">{t.team_name}</p>
+                  {t.coach_name && <p className="text-xs text-neutral-500">Coach: {t.coach_name}</p>}
+                </div>
+                {deleteConfirm === t.team_id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-red-400">Delete team, its players, matches & stats?</span>
+                    <button
+                      onClick={() => handleDeleteTeam(t.team_id)}
+                      disabled={loading}
+                      className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-md hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setDeleteConfirm(t.team_id)}
+                    className="p-2 hover:bg-red-500/10 rounded-lg text-neutral-500 hover:text-red-400 transition-colors"
+                    title="Delete team"
+                  >
+                    <Trash2 size={16} />
+                  </motion.button>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -374,6 +463,7 @@ function SeriesForm() {
 
 function PlayerForm() {
   const [teams, setTeams] = useState<any[]>([]);
+  const [players, setPlayers] = useState<any[]>([]);
   const [playerName, setPlayerName] = useState("");
   const [dob, setDob] = useState("");
   const [battingStyle, setBattingStyle] = useState("Right-hand bat");
@@ -381,6 +471,14 @@ function PlayerForm() {
   const [teamId, setTeamId] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+
+  const fetchPlayers = () => {
+    fetch(`${API_BASE_URL}/players/`)
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setPlayers(data); })
+      .catch(err => console.error("Failed to fetch players:", err));
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/teams/`)
@@ -391,6 +489,7 @@ function PlayerForm() {
         }
       })
       .catch(err => console.error("Failed to fetch teams:", err));
+    fetchPlayers();
   }, []);
 
   const handleAddPlayer = async () => {
@@ -425,6 +524,7 @@ function PlayerForm() {
       setBattingStyle("Right-hand bat");
       setBowlingStyle("Right-arm fast");
       setTeamId("");
+      fetchPlayers();
     } catch (error: any) {
       setMessage({ text: error.message || "An error occurred", type: "error" });
     } finally {
@@ -432,12 +532,42 @@ function PlayerForm() {
     }
   };
 
+  const handleDeletePlayer = async (playerId: number) => {
+    setLoading(true);
+    setMessage({ text: "", type: "" });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/${playerId}`, { method: "DELETE" });
+      if (!response.ok) {
+        let errMsg = "Failed to delete player.";
+        try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail; } catch {}
+        throw new Error(errMsg);
+      }
+      const data = await response.json();
+      setMessage({ text: data.message || "Player deleted successfully!", type: "success" });
+      setDeleteConfirm(null);
+      fetchPlayers();
+    } catch (error: any) {
+      setMessage({ text: error.message || "An error occurred", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTeamName = (tId: number) => {
+    const t = teams.find(team => team.team_id === tId);
+    return t ? t.team_name : "Unknown";
+  };
+
   return (
-    <div className="space-y-6 max-w-md">
+    <div className="space-y-6 max-w-lg">
       {message.text && (
-        <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}
+        >
           {message.text}
-        </div>
+        </motion.div>
       )}
       <div>
         <label className="block text-sm font-medium text-neutral-400 mb-2">Player Name</label>
@@ -507,6 +637,58 @@ function PlayerForm() {
       >
         {loading ? "Adding..." : "Add Player"}
       </motion.button>
+
+      {/* Existing Players List */}
+      {players.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-green-500/20">
+          <h3 className="text-base font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+            <Shield size={18} /> Existing Players ({players.length})
+          </h3>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            {players.map((p) => (
+              <motion.div
+                key={p.player_id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between bg-neutral-950/60 border border-neutral-800/50 rounded-lg px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-neutral-200">{p.player_name}</p>
+                  <p className="text-xs text-neutral-500">{getTeamName(p.team_id)} · {p.batting_style || "N/A"}</p>
+                </div>
+                {deleteConfirm === p.player_id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-red-400">Delete player & all stats?</span>
+                    <button
+                      onClick={() => handleDeletePlayer(p.player_id)}
+                      disabled={loading}
+                      className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-md hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setDeleteConfirm(p.player_id)}
+                    className="p-2 hover:bg-red-500/10 rounded-lg text-neutral-500 hover:text-red-400 transition-colors"
+                    title="Delete player"
+                  >
+                    <Trash2 size={16} />
+                  </motion.button>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
